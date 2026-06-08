@@ -52,8 +52,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchUsage() {
       try {
-        // Récupère l'IP publique réelle du navigateur (même que x-forwarded-for)
-        const ipRes = await fetch('https://api64.ipify.org?format=json')
+        const ipRes = await fetch('https://api.ipify.org?format=json')
         const { ip } = await ipRes.json()
 
         const { data } = await supabase
@@ -101,7 +100,7 @@ export default function DashboardPage() {
         />
         <MetricCard label="Total estimations" value="47" sub="Depuis le début" />
         <MetricCard label="Alertes actives" value="2" sub="Sur 3 configurées" />
-        <MetricCard label="Économies estimées" value={formatEur(820)} sub="Vs prix marché moyen" />
+        <MetricCard label="Economies estimées" value={formatEur(820)} sub="Vs prix marché moyen" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -152,7 +151,9 @@ export default function DashboardPage() {
             <div className="mt-4">
               <div className="flex justify-between mb-2 text-sm">
                 <span style={{ color: 'var(--muted)' }}>Estimations aujourd&apos;hui</span>
-                <span className="font-mono" style={{ color: usageColor }}>{usageLoading ? '…' : `${usageCount} / ${MAX}`}</span>
+                <span className="font-mono" style={{ color: usageColor }}>
+                  {usageLoading ? '…' : `${usageCount} / ${MAX}`}
+                </span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePercent}%`, background: usageColor }} />
@@ -163,7 +164,7 @@ export default function DashboardPage() {
             </div>
             <Link href="/#pricing" className="mt-4 flex items-center justify-center gap-2 font-display font-bold text-xs py-2.5 rounded-sm w-full" style={{ background: 'var(--blue)', color: 'var(--black)' }}>
               <Zap size={12} />
-              Passer Premium — 9.99 €/mois
+              Passer Premium — 9.99 euros/mois
             </Link>
           </Card>
 
@@ -204,7 +205,7 @@ export default function DashboardPage() {
                 </div>
               ))}
               <Link href="/alerts" className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest mt-2" style={{ color: 'var(--blue)' }}>
-                Gérer les alertes <ArrowRight size={10} />
+                Gerer les alertes <ArrowRight size={10} />
               </Link>
             </div>
           </Card>
