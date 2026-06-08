@@ -30,8 +30,8 @@ const RECENT_ESTIMATIONS = [
 ]
 
 const SAVED_PRODUCTS = [
-  { name: 'RTX 4080 Super', brand: 'NVIDIA', price: 720, trend: 'down' as const },
-  { name: 'PS5 Slim', brand: 'Sony', price: 310, trend: 'stable' as const },
+  { name: 'RTX 4080 Super', brand: 'NVIDIA', price: 720 },
+  { name: 'PS5 Slim', brand: 'Sony', price: 310 },
 ]
 
 function CustomBarTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
@@ -52,22 +52,16 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchUsage() {
       try {
-        // Récupère l'IP publique
-        const ipRes = await fetch('https://api.ipify.org?format=json')
+        const ipRes = await fetch('/api/myip')
         const { ip } = await ipRes.json()
 
-        // Récupère le compteur depuis Supabase
         const { data } = await supabase
           .from('usage_limits')
           .select('estimate_count')
           .eq('ip_address', ip)
           .single()
 
-        if (data) {
-          setUsageCount(data.estimate_count)
-        } else {
-          setUsageCount(0)
-        }
+        setUsageCount(data?.estimate_count ?? 0)
       } catch {
         setUsageCount(0)
       } finally {
@@ -106,7 +100,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Metrics row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MetricCard
           label="Estimations aujourd'hui"
@@ -120,28 +113,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Left column */}
         <div className="lg:col-span-2 space-y-5">
-
-          {/* Activity chart */}
           <Card className="p-5">
             <SectionLabel>Activité cette semaine</SectionLabel>
             <div className="mt-4" style={{ height: 160 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ACTIVITY_DATA} margin={{ top: 0, right: 0, bottom: 0, left: -30 }}>
                   <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    tick={{ fill: '#555', fontFamily: 'Space Mono', fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: '#555', fontFamily: 'Space Mono', fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
+                  <XAxis dataKey="day" tick={{ fill: '#555', fontFamily: 'Space Mono', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#555', fontFamily: 'Space Mono', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(0,183,255,0.04)' }} />
                   <Bar dataKey="estimations" fill="var(--blue)" opacity={0.7} radius={[2, 2, 0, 0]} />
                 </BarChart>
@@ -149,35 +129,23 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {/* Recent estimations */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
               <SectionLabel>Estimations récentes</SectionLabel>
-              <Link
-                href="/estimation"
-                className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1 transition-colors"
-                style={{ color: 'var(--blue)' }}
-              >
+              <Link href="/estimation" className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1" style={{ color: 'var(--blue)' }}>
                 Nouvelle <ArrowRight size={10} />
               </Link>
             </div>
-
             <div className="space-y-0">
               {RECENT_ESTIMATIONS.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 py-3"
-                  style={{ borderBottom: i < RECENT_ESTIMATIONS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
-                >
+                <div key={i} className="flex items-center gap-4 py-3" style={{ borderBottom: i < RECENT_ESTIMATIONS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                   <ScoreRing score={item.score} size={44} label="" />
                   <div className="flex-1 min-w-0">
                     <p className="font-display font-bold text-sm">{item.product}</p>
                     <p className="text-xs" style={{ color: 'var(--muted)' }}>{item.brand}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-display font-bold text-sm" style={{ color: 'var(--blue)' }}>
-                      {formatEur(item.price)}
-                    </p>
+                    <p className="font-display font-bold text-sm" style={{ color: 'var(--blue)' }}>{formatEur(item.price)}</p>
                     <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>{item.date}</p>
                   </div>
                 </div>
@@ -186,10 +154,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Right column */}
         <div className="space-y-5">
-
-          {/* Plan usage — relié à la vraie BDD */}
           <Card className="p-5">
             <SectionLabel>Usage du plan</SectionLabel>
             <div className="mt-4">
@@ -200,30 +165,18 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${usagePercent}%`, background: usageColor }}
-                />
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePercent}%`, background: usageColor }} />
               </div>
               <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
-                {usageLoading
-                  ? 'Chargement…'
-                  : usageCount >= MAX
-                  ? 'Limite atteinte. Passez Premium pour continuer.'
-                  : `${remaining} estimation${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}.`}
+                {usageLoading ? 'Chargement…' : usageCount >= MAX ? 'Limite atteinte. Passez Premium pour continuer.' : `${remaining} estimation${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}.`}
               </p>
             </div>
-            <Link
-              href="/#pricing"
-              className="mt-4 flex items-center justify-center gap-2 font-display font-bold text-xs py-2.5 rounded-sm w-full transition-opacity hover:opacity-90"
-              style={{ background: 'var(--blue)', color: 'var(--black)' }}
-            >
+            <Link href="/#pricing" className="mt-4 flex items-center justify-center gap-2 font-display font-bold text-xs py-2.5 rounded-sm w-full" style={{ background: 'var(--blue)', color: 'var(--black)' }}>
               <Zap size={12} />
               Passer Premium — 9.99 €/mois
             </Link>
           </Card>
 
-          {/* Saved products */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
               <SectionLabel>Produits favoris</SectionLabel>
@@ -231,60 +184,36 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-3">
               {SAVED_PRODUCTS.map(p => (
-                <div
-                  key={p.name}
-                  className="flex items-center justify-between py-2"
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                >
+                <div key={p.name} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                   <div>
                     <p className="font-display font-bold text-sm">{p.name}</p>
                     <p className="text-xs" style={{ color: 'var(--muted)' }}>{p.brand}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono text-sm" style={{ color: 'var(--blue)' }}>
-                      {formatEur(p.price)}
-                    </p>
-                  </div>
+                  <p className="font-mono text-sm" style={{ color: 'var(--blue)' }}>{formatEur(p.price)}</p>
                 </div>
               ))}
-              <Link
-                href="/market"
-                className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest mt-2 transition-colors"
-                style={{ color: 'var(--blue)' }}
-              >
+              <Link href="/market" className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest mt-2" style={{ color: 'var(--blue)' }}>
                 Explorer le Market <ArrowRight size={10} />
               </Link>
             </div>
           </Card>
 
-          {/* Active alerts */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
               <SectionLabel>Alertes actives</SectionLabel>
-              <Link href="/alerts">
-                <Bell size={14} style={{ color: 'var(--blue)' }} />
-              </Link>
+              <Link href="/alerts"><Bell size={14} style={{ color: 'var(--blue)' }} /></Link>
             </div>
             <div className="space-y-3">
-              {[
-                { product: 'RTX 4070', price: 400 },
-                { product: 'PlayStation 5', price: 300 },
-              ].map(a => (
+              {[{ product: 'RTX 4070', price: 400 }, { product: 'PlayStation 5', price: 300 }].map(a => (
                 <div key={a.product} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="pulse-dot" />
                     <span className="text-sm">{a.product}</span>
                   </div>
-                  <span className="font-mono text-xs" style={{ color: 'var(--blue)' }}>
-                    &lt; {formatEur(a.price)}
-                  </span>
+                  <span className="font-mono text-xs" style={{ color: 'var(--blue)' }}>&lt; {formatEur(a.price)}</span>
                 </div>
               ))}
-              <Link
-                href="/alerts"
-                className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest mt-2 transition-colors"
-                style={{ color: 'var(--blue)' }}
-              >
+              <Link href="/alerts" className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest mt-2" style={{ color: 'var(--blue)' }}>
                 Gérer les alertes <ArrowRight size={10} />
               </Link>
             </div>
