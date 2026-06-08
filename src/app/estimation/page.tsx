@@ -10,7 +10,7 @@ import { CATALOG, CATEGORIES, searchProducts, type ProductEntry } from '@/lib/ca
 const CONDITION_OPTIONS = [
   { value: 'new', label: 'Comme neuf — jamais utilisé ou très peu' },
   { value: 'vgood', label: 'Très bon état — quelques traces légères' },
-  { value: 'good', label: 'Bon état — traces d\'usure normales' },
+  { value: 'good', label: "Bon état — traces d'usure normales" },
   { value: 'fair', label: 'Correct — traces visibles, fonctionnel' },
 ]
 
@@ -46,7 +46,6 @@ export default function EstimationPage() {
 
   const searchRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -83,7 +82,7 @@ export default function EstimationPage() {
 
   async function handleSubmit() {
     if (!selectedProduct) { setError('Sélectionnez un produit dans la liste.'); return }
-    if (!condition) { setError('Choisissez l\'état du produit.'); return }
+    if (!condition) { setError("Choisissez l'état du produit."); return }
     setLoading(true)
     setResult(null)
     setError('')
@@ -96,7 +95,7 @@ export default function EstimationPage() {
           product: selectedProduct.name,
           brand: selectedProduct.brand,
           category: selectedProduct.category,
-          basePrice: selectedProduct.basePrice,
+          basePrice: selectedProduct.basePrice ?? selectedProduct.msrp ?? 0,
           condition,
           purchaseDate,
           warranty,
@@ -107,7 +106,7 @@ export default function EstimationPage() {
       if (!res.ok) throw new Error(data.error)
       setResult(data)
     } catch {
-      setError('Erreur lors de l\'analyse. Réessayez.')
+      setError("Erreur lors de l'analyse. Réessayez.")
     } finally {
       setLoading(false)
     }
@@ -120,6 +119,8 @@ export default function EstimationPage() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const catalogByCategory = CATALOG.filter(p => p.category === activeCategory)
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
@@ -178,7 +179,7 @@ export default function EstimationPage() {
                             <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>{p.brand} · {p.category}</p>
                           </div>
                           <span className="font-mono text-xs ml-3" style={{ color: 'var(--blue)', flexShrink: 0 }}>
-                            ~{formatEur(p.basePrice)}
+                            ~{formatEur(p.basePrice ?? p.msrp ?? 0)}
                           </span>
                         </button>
                       ))}
@@ -233,7 +234,7 @@ export default function EstimationPage() {
 
                     {/* Product list */}
                     <div className="col-span-2 overflow-y-auto">
-                      {(CATALOG[activeCategory] || []).map(p => (
+                      {catalogByCategory.map(p => (
                         <button
                           key={p.id}
                           onClick={() => selectProduct(p)}
@@ -247,7 +248,7 @@ export default function EstimationPage() {
                             <p className="font-mono text-[9px] mt-0.5" style={{ color: 'var(--muted)' }}>{p.brand}</p>
                           </div>
                           <span className="font-mono text-[10px] ml-2 flex-shrink-0" style={{ color: 'var(--blue)' }}>
-                            ~{formatEur(p.basePrice)}
+                            ~{formatEur(p.basePrice ?? p.msrp ?? 0)}
                           </span>
                         </button>
                       ))}
@@ -334,7 +335,7 @@ export default function EstimationPage() {
             )}
 
             <Button onClick={handleSubmit} disabled={loading} size="lg" className="w-full justify-center">
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Analyse en cours…</> : '↗ Lancer l\'estimation IA'}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Analyse en cours…</> : "↗ Lancer l'estimation IA"}
             </Button>
           </div>
         </Card>
