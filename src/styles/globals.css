@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -30,9 +30,12 @@ html {
 body {
   background: var(--black);
   color: var(--white);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Rajdhani', sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 /* Custom scrollbar */
@@ -57,9 +60,9 @@ body {
 }
 
 /* Typography utilities */
-.font-display { font-family: 'Syne', sans-serif; }
+.font-display { font-family: 'Orbitron', sans-serif; }
 .font-mono { font-family: 'Space Mono', monospace; }
-.font-body { font-family: 'DM Sans', sans-serif; }
+.font-body { font-family: 'Rajdhani', sans-serif; }
 
 /* Grid background */
 .bg-grid {
@@ -114,11 +117,13 @@ body {
   color: var(--white);
   border-radius: 3px;
   transition: border-color 0.2s;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
   padding: 10px 14px;
   width: 100%;
   outline: none;
+  letter-spacing: 0.3px;
 }
 .z-input:focus {
   border-color: var(--blue);
@@ -170,12 +175,6 @@ select.z-input option { background: var(--dark); }
 .delay-300 { animation-delay: 0.3s; }
 .delay-400 { animation-delay: 0.4s; }
 
-/* Number flicker animation */
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
-}
-
 /* Pulsing dot */
 .pulse-dot {
   width: 6px;
@@ -216,10 +215,46 @@ select.z-input option { background: var(--dark); }
 }
 .z-table td {
   padding: 12px 14px;
-  font-size: 14px;
+  font-size: 15px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 500;
   border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 .z-table tr:hover td { background: rgba(0, 183, 255, 0.03); }
+
+/* Orbitron specific adjustments */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Rajdhani needs slightly bigger size for readability */
+p, span, div, button, input, select, textarea, a {
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* Override for mono elements */
+.font-mono, code, pre {
+  font-family: 'Space Mono', monospace !important;
+}
+
+/* Orbitron title sizing — slightly smaller since the font is wider */
+.orbitron-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Glitch effect for hero title */
+@keyframes glitch {
+  0%, 100% { text-shadow: none; }
+  20% { text-shadow: -2px 0 rgba(0,183,255,0.5); }
+  40% { text-shadow: 2px 0 rgba(0,183,255,0.5); }
+  60% { text-shadow: -1px 0 rgba(0,183,255,0.3); }
+}
+
+.glitch-hover:hover {
+  animation: glitch 0.4s ease;
+}
 
 /* Tooltip */
 .tooltip {
@@ -245,4 +280,5 @@ select.z-input option { background: var(--dark); }
   transition: all 0.15s;
   pointer-events: none;
   z-index: 50;
+  font-family: 'Rajdhani', sans-serif;
 }
