@@ -20,36 +20,41 @@ function getIP(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const ip = getIP(req)
+  const ip = getIP(req)
+  console.log('IP détectée:', ip)
 
-    // Vérifie et incrémente le compteur
-    const { data: existing } = await supabase
-      .from('usage_limits')
-      .select('*')
-      .eq('ip_address', ip)
-      .single()
+  // Lecture du compteur
+  const { data: existing, error: readError } = await supabase
+    .from('usage_limits')
+    .select('*')
+    .eq('ip_address', ip)
+    .single()
 
-    if (existing) {
-      if (existing.estimate_count >= MAX_FREE_ESTIMATES) {
-        return NextResponse.json(
-          { error: 'LIMIT_REACHED', count: existing.estimate_count },
-          { status: 429 }
-        )
-      }
-      await supabase
-        .from('usage_limits')
-        .update({
-          estimate_count: existing.estimate_count + 1,
-          last_used_at: new Date().toISOString(),
-        })
-        .eq('ip_address', ip)
-    } else {
-      await supabase
-        .from('usage_limits')
-        .insert({ ip_address: ip, estimate_count: 1 })
+  console.log('Lecture Supabase:', existing, readError)
+
+  if (existing) {
+    if (existing.estimate_count >= MAX_FREE_ESTIMATES) {
+      return NextResponse.json(
+        { error: 'LIMIT_REACHED', count: existing.estimate_count },
+        { status: 429 }
+      )
     }
+    const { error: updateError } = await supabase
+      .from('usage_limits')
+      .update({
+        estimate_count: existing.estimate_count + 1,
+        last_used_at: new Date().toISOString(),
+      })
+      .eq('ip_address', ip)
+    console.log('Update error:', updateError)
+  } else {
+    const { error: insertError } = await supabase
+      .from('usage_limits')
+      .insert({ ip_address: ip, estimate_count: 1 })
+    console.log('Insert error:', insertError)
+  }
 
+  try {
     const body = await req.json()
     const { product, brand, category, basePrice, condition, purchaseDate, warranty, accessories } = body
 
