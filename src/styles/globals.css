@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -19,13 +19,9 @@
   --subtle: #2A2A2A;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--black);
@@ -38,29 +34,16 @@ body {
   letter-spacing: 0.3px;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: var(--dark);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--blue);
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue); }
 
-/* Selection */
-::selection {
-  background: var(--blue-dim);
-  color: var(--blue);
-}
+::selection { background: var(--blue-dim); color: var(--blue); }
 
-/* Typography utilities */
-.font-display { font-family: 'Orbitron', sans-serif; }
+/* Font utilities */
+.font-display { font-family: 'Audiowide', sans-serif; }
 .font-mono { font-family: 'Space Mono', monospace; }
 .font-body { font-family: 'Rajdhani', sans-serif; }
 
@@ -72,22 +55,19 @@ body {
   background-size: 40px 40px;
 }
 
-/* Card base */
+/* Card */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
 }
 
-.card-hover {
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
+.card-hover { transition: border-color 0.2s, box-shadow 0.2s; }
 .card-hover:hover {
   border-color: rgba(0, 183, 255, 0.4);
   box-shadow: 0 0 20px rgba(0, 183, 255, 0.06);
 }
 
-/* Blue accent top border on hover */
 .card-accent::before {
   content: '';
   position: absolute;
@@ -110,7 +90,7 @@ body {
 }
 .btn-glow:active { transform: translateY(0px); }
 
-/* Input styles */
+/* Input */
 .z-input {
   background: var(--dark);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -130,7 +110,6 @@ body {
   box-shadow: 0 0 0 3px rgba(0, 183, 255, 0.07);
 }
 .z-input::placeholder { color: var(--muted); }
-
 select.z-input option { background: var(--dark); }
 
 /* Badge */
@@ -146,12 +125,11 @@ select.z-input option { background: var(--dark); }
   color: var(--blue);
 }
 
-/* Scan line animation */
+/* Scan line */
 @keyframes scanline {
   0% { top: -2px; }
   100% { top: 100%; }
 }
-
 .scanline {
   position: fixed;
   left: 0;
@@ -163,19 +141,18 @@ select.z-input option { background: var(--dark); }
   z-index: 100;
 }
 
-/* Fade animations */
+/* Fade */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fadeUp { animation: fadeUp 0.5s ease both; }
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
 .delay-300 { animation-delay: 0.3s; }
 .delay-400 { animation-delay: 0.4s; }
 
-/* Pulsing dot */
+/* Pulse dot */
 .pulse-dot {
   width: 6px;
   height: 6px;
@@ -189,17 +166,11 @@ select.z-input option { background: var(--dark); }
 }
 
 /* Score ring */
-.score-ring {
-  animation: ringDraw 1.2s ease both;
-}
-@keyframes ringDraw {
-  from { stroke-dashoffset: 364; }
-}
+.score-ring { animation: ringDraw 1.2s ease both; }
+@keyframes ringDraw { from { stroke-dashoffset: 364; } }
 
 /* Demand bar */
-.demand-bar-fill {
-  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
+.demand-bar-fill { transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* Table */
 .z-table { width: 100%; border-collapse: collapse; }
@@ -222,49 +193,9 @@ select.z-input option { background: var(--dark); }
 }
 .z-table tr:hover td { background: rgba(0, 183, 255, 0.03); }
 
-/* Orbitron specific adjustments */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Orbitron', sans-serif;
-}
-
-/* Rajdhani needs slightly bigger size for readability */
-p, span, div, button, input, select, textarea, a {
-  font-family: 'Rajdhani', sans-serif;
-}
-
-/* Override for mono elements */
-.font-mono, code, pre {
-  font-family: 'Space Mono', monospace !important;
-}
-
-/* Orbitron title sizing — slightly smaller since the font is wider */
-.orbitron-title {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-/* Glitch effect for hero title */
-@keyframes glitch {
-  0%, 100% { text-shadow: none; }
-  20% { text-shadow: -2px 0 rgba(0,183,255,0.5); }
-  40% { text-shadow: 2px 0 rgba(0,183,255,0.5); }
-  60% { text-shadow: -1px 0 rgba(0,183,255,0.3); }
-}
-
-.glitch-hover:hover {
-  animation: glitch 0.4s ease;
-}
-
 /* Tooltip */
-.tooltip {
-  position: relative;
-}
-.tooltip:hover .tooltip-content {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
+.tooltip { position: relative; }
+.tooltip:hover .tooltip-content { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .tooltip-content {
   position: absolute;
   bottom: calc(100% + 8px);
