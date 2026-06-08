@@ -1,19 +1,18 @@
 'use client'
-import { useState } from 'react'
-import { Loader2, Lightbulb, Zap, Copy, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Loader2, Lightbulb, Zap, Copy, Check, Search, ChevronDown } from 'lucide-react'
 import {
   Card, PageHeader, MetricCard, Button, ScoreRing, DemandBar, SectionLabel
 } from '@/components/ui'
-import { CONDITION_OPTIONS, WARRANTY_OPTIONS, ACCESSORY_OPTIONS, formatEur } from '@/lib/types'
+import { WARRANTY_OPTIONS, ACCESSORY_OPTIONS, formatEur } from '@/lib/types'
+import { CATALOG, CATEGORIES, searchProducts, type ProductEntry } from '@/lib/catalog'
 
-interface FormState {
-  product: string
-  brand: string
-  condition: string
-  purchaseDate: string
-  warranty: string
-  accessories: string
-}
+const CONDITION_OPTIONS = [
+  { value: 'new', label: 'Comme neuf — jamais utilisé ou très peu' },
+  { value: 'vgood', label: 'Très bon état — quelques traces légères' },
+  { value: 'good', label: 'Bon état — traces d\'usure normales' },
+  { value: 'fair', label: 'Correct — traces visibles, fonctionnel' },
+]
 
 interface EstimationResult {
   minPrice: number
@@ -24,36 +23,67 @@ interface EstimationResult {
   saleSpeed: string
   confidence: number
   ztraceScore: number
-  trend: 'up' | 'down' | 'stable'
-  trendPercent: number
   tips: string[]
 }
 
 export default function EstimationPage() {
-  const [form, setForm] = useState<FormState>({
-    product: '',
-    brand: '',
-    condition: '',
-    purchaseDate: '',
-    warranty: 'none',
-    accessories: 'none',
-  })
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<ProductEntry[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<ProductEntry | null>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [showCatalog, setShowCatalog] = useState(false)
+  const [activeCategory, setActiveCategory] = useState(CATEGORIES[0])
+
+  const [condition, setCondition] = useState('')
+  const [purchaseDate, setPurchaseDate] = useState('')
+  const [warranty, setWarranty] = useState('none')
+  const [accessories, setAccessories] = useState('none')
+
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<EstimationResult | null>(null)
   const [error, setError] = useState('')
-  const [errors, setErrors] = useState<Partial<FormState>>({})
   const [copied, setCopied] = useState(false)
 
-  function validate() {
-    const e: Partial<FormState> = {}
-    if (!form.product.trim()) e.product = 'Requis'
-    if (!form.condition) e.condition = 'Requis'
-    setErrors(e)
-    return Object.keys(e).length === 0
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+        setShowCatalog(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  function handleSearch(value: string) {
+    setQuery(value)
+    setSelectedProduct(null)
+    setResult(null)
+    if (value.length >= 2) {
+      setSuggestions(searchProducts(value))
+      setShowDropdown(true)
+      setShowCatalog(false)
+    } else {
+      setSuggestions([])
+      setShowDropdown(false)
+    }
+  }
+
+  function selectProduct(product: ProductEntry) {
+    setSelectedProduct(product)
+    setQuery(product.name)
+    setShowDropdown(false)
+    setShowCatalog(false)
+    setResult(null)
+    setError('')
   }
 
   async function handleSubmit() {
-    if (!validate()) return
+    if (!selectedProduct) { setError('Sélectionnez un produit dans la liste.'); return }
+    if (!condition) { setError('Choisissez l\'état du produit.'); return }
     setLoading(true)
     setResult(null)
     setError('')
@@ -62,33 +92,30 @@ export default function EstimationPage() {
       const res = await fetch('/api/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          product: selectedProduct.name,
+          brand: selectedProduct.brand,
+          category: selectedProduct.category,
+          basePrice: selectedProduct.basePrice,
+          condition,
+          purchaseDate,
+          warranty,
+          accessories,
+        }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!res.ok) throw new Error(data.error)
       setResult(data)
-    } catch (err) {
-      setError('Erreur lors de l\'analyse. Vérifiez votre connexion et réessayez.')
-      console.error(err)
+    } catch {
+      setError('Erreur lors de l\'analyse. Réessayez.')
     } finally {
       setLoading(false)
     }
   }
 
-  function handleChange(field: keyof FormState, value: string) {
-    setForm(f => ({ ...f, [field]: value }))
-    if (errors[field]) setErrors(e => ({ ...e, [field]: undefined }))
-  }
-
   async function copyResult() {
-    if (!result) return
-    const text = `Estimation Ztrace — ${form.product}
-Prix minimum : ${formatEur(result.minPrice)}
-Prix moyen : ${formatEur(result.midPrice)}
-Prix maximum : ${formatEur(result.maxPrice)}
-Demande : ${result.demandLabel} (${result.demand}/100)
-Vitesse de vente estimée : ${result.saleSpeed}
-Score Ztrace : ${result.ztraceScore}/100`
+    if (!result || !selectedProduct) return
+    const text = `Estimation Ztrace — ${selectedProduct.name}\nPrix minimum : ${formatEur(result.minPrice)}\nPrix moyen : ${formatEur(result.midPrice)}\nPrix maximum : ${formatEur(result.maxPrice)}\nDemande : ${result.demandLabel} (${result.demand}/100)\nZtrace Score : ${result.ztraceScore}/100`
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -97,98 +124,207 @@ Score Ztrace : ${result.ztraceScore}/100`
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <PageHeader
-        label="Ztrace Estimation — Propulsé par GPT-4"
+        label="Ztrace Estimation — IA"
         title={<>Estimez votre <span style={{ color: 'var(--blue)' }}>matériel</span></>}
-        subtitle="L'IA analyse le marché français en temps réel et calcule le prix optimal pour votre produit."
+        subtitle="Sélectionnez un produit dans notre catalogue de +200 références, renseignez l'état et obtenez une estimation IA précise."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
         {/* Form */}
         <Card className="p-6">
           <div className="flex items-center gap-2 pb-4 mb-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
             <span className="w-2 h-2 rounded-full" style={{ background: '#ff5f56' }} />
             <span className="w-2 h-2 rounded-full" style={{ background: '#ffbd2e' }} />
             <span className="w-2 h-2 rounded-full" style={{ background: '#27c93f' }} />
-            <span className="font-mono text-[10px] ml-auto" style={{ color: 'var(--muted)' }}>
-              ztrace_ai_estimation.gpt4
-            </span>
+            <span className="font-mono text-[10px] ml-auto" style={{ color: 'var(--muted)' }}>ztrace_estimation.ai</span>
           </div>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Produit *
-                </label>
-                <input
-                  className={`z-input ${errors.product ? 'border-red-500/50' : ''}`}
-                  placeholder="RTX 4070, PS5, Switch..."
-                  value={form.product}
-                  onChange={e => handleChange('product', e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                />
-                {errors.product && <p className="font-mono text-[10px] mt-1" style={{ color: '#ef4444' }}>Requis</p>}
+
+            {/* Product search */}
+            <div ref={searchRef}>
+              <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
+                Produit *
+              </label>
+
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--muted)' }} />
+                  <input
+                    className="z-input pl-9"
+                    placeholder="Rechercher un produit..."
+                    value={query}
+                    onChange={e => handleSearch(e.target.value)}
+                    onFocus={() => { if (query.length >= 2) setShowDropdown(true) }}
+                  />
+
+                  {/* Search suggestions */}
+                  {showDropdown && suggestions.length > 0 && (
+                    <div
+                      className="absolute top-full left-0 right-0 mt-1 rounded-sm border overflow-hidden z-50"
+                      style={{ background: 'var(--surface)', borderColor: 'var(--border)', maxHeight: 240, overflowY: 'auto' }}
+                    >
+                      {suggestions.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => selectProduct(p)}
+                          className="w-full text-left px-3 py-2.5 flex items-center justify-between transition-colors"
+                          style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--blue-dim)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{p.name}</p>
+                            <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>{p.brand} · {p.category}</p>
+                          </div>
+                          <span className="font-mono text-xs ml-3" style={{ color: 'var(--blue)', flexShrink: 0 }}>
+                            ~{formatEur(p.basePrice)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Catalog button */}
+                <button
+                  onClick={() => { setShowCatalog(!showCatalog); setShowDropdown(false) }}
+                  className="flex items-center gap-1.5 px-3 rounded-sm border text-sm transition-all flex-shrink-0"
+                  style={{
+                    borderColor: showCatalog ? 'var(--blue)' : 'rgba(255,255,255,0.1)',
+                    color: showCatalog ? 'var(--blue)' : 'var(--muted)',
+                    background: showCatalog ? 'var(--blue-dim)' : 'transparent',
+                    fontFamily: 'Space Mono, monospace',
+                    fontSize: 10,
+                  }}
+                >
+                  <ChevronDown size={12} />
+                  Catalogue
+                </button>
               </div>
-              <div>
-                <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Marque
-                </label>
-                <input
-                  className="z-input"
-                  placeholder="NVIDIA, Sony, ASUS..."
-                  value={form.brand}
-                  onChange={e => handleChange('brand', e.target.value)}
-                />
-              </div>
+
+              {/* Catalog browser */}
+              {showCatalog && (
+                <div
+                  className="mt-2 rounded-sm border overflow-hidden"
+                  style={{ background: 'var(--dark)', borderColor: 'var(--border)' }}
+                >
+                  <div className="grid grid-cols-3 gap-0" style={{ height: 320 }}>
+                    {/* Category list */}
+                    <div className="overflow-y-auto border-r" style={{ borderColor: 'var(--border-subtle)' }}>
+                      {CATEGORIES.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setActiveCategory(cat)}
+                          className="w-full text-left px-3 py-2 text-xs transition-colors"
+                          style={{
+                            background: activeCategory === cat ? 'var(--blue-dim)' : 'transparent',
+                            color: activeCategory === cat ? 'var(--blue)' : 'var(--muted)',
+                            borderBottom: '1px solid var(--border-subtle)',
+                            fontFamily: 'Space Mono, monospace',
+                            fontSize: 9,
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Product list */}
+                    <div className="col-span-2 overflow-y-auto">
+                      {(CATALOG[activeCategory] || []).map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => selectProduct(p)}
+                          className="w-full text-left px-3 py-2.5 flex items-center justify-between transition-colors"
+                          style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,183,255,0.04)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div>
+                            <p className="text-xs font-medium leading-tight">{p.name}</p>
+                            <p className="font-mono text-[9px] mt-0.5" style={{ color: 'var(--muted)' }}>{p.brand}</p>
+                          </div>
+                          <span className="font-mono text-[10px] ml-2 flex-shrink-0" style={{ color: 'var(--blue)' }}>
+                            ~{formatEur(p.basePrice)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Selected product badge */}
+              {selectedProduct && (
+                <div
+                  className="mt-2 flex items-center justify-between px-3 py-2 rounded-sm"
+                  style={{ background: 'var(--blue-dim)', border: '1px solid rgba(0,183,255,0.3)' }}
+                >
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--blue)' }}>{selectedProduct.name}</p>
+                    <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>{selectedProduct.brand} · {selectedProduct.category}</p>
+                  </div>
+                  <span className="font-mono text-xs" style={{ color: 'var(--blue)' }}>✓ Sélectionné</span>
+                </div>
+              )}
             </div>
 
+            {/* Condition */}
             <div>
               <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
                 État *
               </label>
-              <select
-                className={`z-input ${errors.condition ? 'border-red-500/50' : ''}`}
-                value={form.condition}
-                onChange={e => handleChange('condition', e.target.value)}
-              >
-                <option value="">Sélectionner l&apos;état</option>
+              <div className="grid grid-cols-2 gap-2">
                 {CONDITION_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <button
+                    key={o.value}
+                    onClick={() => setCondition(o.value)}
+                    className="text-left px-3 py-2.5 rounded-sm border text-xs transition-all"
+                    style={{
+                      borderColor: condition === o.value ? 'var(--blue)' : 'rgba(255,255,255,0.08)',
+                      background: condition === o.value ? 'var(--blue-dim)' : 'var(--dark)',
+                      color: condition === o.value ? 'var(--blue)' : 'var(--muted)',
+                    }}
+                  >
+                    {o.label}
+                  </button>
                 ))}
-              </select>
-              {errors.condition && <p className="font-mono text-[10px] mt-1" style={{ color: '#ef4444' }}>Requis</p>}
+              </div>
             </div>
 
-            <div>
-              <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
-                Date d&apos;achat
-              </label>
-              <input
-                className="z-input"
-                placeholder="Ex : Janvier 2024"
-                value={form.purchaseDate}
-                onChange={e => handleChange('purchaseDate', e.target.value)}
-              />
-            </div>
-
+            {/* Date + Warranty */}
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
+                  Date d&apos;achat
+                </label>
+                <input
+                  className="z-input"
+                  placeholder="Ex : Janv. 2024"
+                  value={purchaseDate}
+                  onChange={e => setPurchaseDate(e.target.value)}
+                />
+              </div>
               <div>
                 <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
                   Garantie restante
                 </label>
-                <select className="z-input" value={form.warranty} onChange={e => handleChange('warranty', e.target.value)}>
+                <select className="z-input" value={warranty} onChange={e => setWarranty(e.target.value)}>
                   {WARRANTY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Accessoires inclus
-                </label>
-                <select className="z-input" value={form.accessories} onChange={e => handleChange('accessories', e.target.value)}>
-                  {ACCESSORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
+            </div>
+
+            {/* Accessories */}
+            <div>
+              <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
+                Accessoires inclus
+              </label>
+              <select className="z-input" value={accessories} onChange={e => setAccessories(e.target.value)}>
+                {ACCESSORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
             </div>
 
             {error && (
@@ -197,19 +333,9 @@ Score Ztrace : ${result.ztraceScore}/100`
               </div>
             )}
 
-            <Button onClick={handleSubmit} disabled={loading} size="lg" className="w-full justify-center mt-2">
-              {loading ? (
-                <><Loader2 size={16} className="animate-spin" /> Analyse IA en cours…</>
-              ) : (
-                '↗ Lancer l\'estimation IA'
-              )}
+            <Button onClick={handleSubmit} disabled={loading} size="lg" className="w-full justify-center">
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Analyse en cours…</> : '↗ Lancer l\'estimation IA'}
             </Button>
-
-            {loading && (
-              <p className="font-mono text-[10px] text-center" style={{ color: 'var(--muted)' }}>
-                GPT-4 analyse le marché… environ 5 secondes
-              </p>
-            )}
           </div>
         </Card>
 
@@ -220,9 +346,9 @@ Score Ztrace : ${result.ztraceScore}/100`
               <div className="w-12 h-12 rounded-sm flex items-center justify-center mb-4" style={{ background: 'var(--blue-dim)', border: '1px solid var(--border)' }}>
                 <Zap size={20} style={{ color: 'var(--blue)' }} />
               </div>
-              <p className="font-display font-bold mb-2">Analyse IA réelle</p>
+              <p className="font-display font-bold mb-2">+200 produits disponibles</p>
               <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                GPT-4 analyse le marché de l&apos;occasion français en temps réel pour chaque estimation.
+                GPU, consoles, PC, claviers, souris, casques, VR et bien plus — cherchez ou parcourez le catalogue.
               </p>
             </Card>
           )}
@@ -234,8 +360,7 @@ Score Ztrace : ${result.ztraceScore}/100`
                   <span key={i} className="w-2 h-2 rounded-full" style={{ background: 'var(--blue)', animation: `pulse 1s ${i * 0.15}s ease-in-out infinite` }} />
                 ))}
               </div>
-              <p className="font-mono text-xs mb-1" style={{ color: 'var(--muted)' }}>Analyse GPT-4 en cours…</p>
-              <p className="font-mono text-[10px]" style={{ color: 'var(--muted)', opacity: 0.5 }}>Consultation du marché de l&apos;occasion français</p>
+              <p className="font-mono text-xs" style={{ color: 'var(--muted)' }}>Analyse IA en cours…</p>
             </Card>
           )}
 
@@ -274,7 +399,7 @@ Score Ztrace : ${result.ztraceScore}/100`
                   </div>
                   <button
                     onClick={copyResult}
-                    className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors"
+                    className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest"
                     style={{ color: copied ? '#22c55e' : 'var(--muted)' }}
                   >
                     {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -282,7 +407,7 @@ Score Ztrace : ${result.ztraceScore}/100`
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {result.tips.map((tip, i) => (
+                  {result.tips?.map((tip, i) => (
                     <div key={i} className="flex gap-3 text-sm">
                       <span className="font-mono text-[10px] mt-0.5 flex-shrink-0" style={{ color: 'var(--blue)' }}>
                         {String(i + 1).padStart(2, '0')}
@@ -292,11 +417,6 @@ Score Ztrace : ${result.ztraceScore}/100`
                   ))}
                 </div>
               </Card>
-
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard label="Demande marché" value={result.demandLabel} sub={`${result.demand}/100`} />
-                <MetricCard label="Ztrace Score" value={`${result.ztraceScore}/100`} highlight sub="Propulsé par GPT-4" />
-              </div>
             </div>
           )}
         </div>
