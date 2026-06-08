@@ -1,9 +1,16 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts'
-import { TrendingUp, Clock, Star, Bell, ArrowRight, Zap } from 'lucide-react'
+import { Star, Bell, ArrowRight, Zap } from 'lucide-react'
 import Link from 'next/link'
-import { Card, PageHeader, MetricCard, SectionLabel, Badge, ScoreRing } from '@/components/ui'
+import { Card, MetricCard, SectionLabel, ScoreRing } from '@/components/ui'
 import { formatEur } from '@/lib/types'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const ACTIVITY_DATA = [
   { day: 'Lun', estimations: 3 },
@@ -16,7 +23,7 @@ const ACTIVITY_DATA = [
 ]
 
 const RECENT_ESTIMATIONS = [
-  { product: 'RTX 4070', brand: 'NVIDIA', price: 450, date: 'Aujourd\'hui 14:32', score: 85 },
+  { product: 'RTX 4070', brand: 'NVIDIA', price: 450, date: "Aujourd'hui 14:32", score: 85 },
   { product: 'PlayStation 5', brand: 'Sony', price: 320, date: 'Hier 19:45', score: 91 },
   { product: 'RTX 3080', brand: 'NVIDIA', price: 310, date: 'Il y a 2 jours', score: 72 },
   { product: 'Switch OLED', brand: 'Nintendo', price: 220, date: 'Il y a 3 jours', score: 78 },
@@ -30,7 +37,7 @@ const SAVED_PRODUCTS = [
 function CustomBarTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="card px-3 py-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: 2 }}>
       <p className="font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--muted)' }}>{label}</p>
       <p className="font-display font-bold text-sm" style={{ color: 'var(--blue)' }}>{payload[0].value} estimations</p>
     </div>
@@ -38,6 +45,42 @@ function CustomBarTooltip({ active, payload, label }: { active?: boolean; payloa
 }
 
 export default function DashboardPage() {
+  const [usageCount, setUsageCount] = useState<number>(0)
+  const [usageLoading, setUsageLoading] = useState(true)
+  const MAX = 5
+
+  useEffect(() => {
+    async function fetchUsage() {
+      try {
+        // Récupère l'IP publique
+        const ipRes = await fetch('https://api.ipify.org?format=json')
+        const { ip } = await ipRes.json()
+
+        // Récupère le compteur depuis Supabase
+        const { data } = await supabase
+          .from('usage_limits')
+          .select('estimate_count')
+          .eq('ip_address', ip)
+          .single()
+
+        if (data) {
+          setUsageCount(data.estimate_count)
+        } else {
+          setUsageCount(0)
+        }
+      } catch {
+        setUsageCount(0)
+      } finally {
+        setUsageLoading(false)
+      }
+    }
+    fetchUsage()
+  }, [])
+
+  const remaining = Math.max(0, MAX - usageCount)
+  const usagePercent = Math.min(100, (usageCount / MAX) * 100)
+  const usageColor = usageCount >= MAX ? '#ef4444' : usageCount >= 4 ? '#f59e0b' : 'var(--blue)'
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
       <div className="flex items-start justify-between mb-8">
@@ -65,7 +108,12 @@ export default function DashboardPage() {
 
       {/* Metrics row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MetricCard label="Estimations aujourd'hui" value="3/5" highlight sub="Limite plan gratuit" />
+        <MetricCard
+          label="Estimations aujourd'hui"
+          value={usageLoading ? '…' : `${usageCount}/${MAX}`}
+          highlight={usageCount >= MAX}
+          sub={usageLoading ? 'Chargement…' : usageCount >= MAX ? 'Limite atteinte' : `${remaining} restante${remaining > 1 ? 's' : ''}`}
+        />
         <MetricCard label="Total estimations" value="47" sub="Depuis le début" />
         <MetricCard label="Alertes actives" value="2" sub="Sur 3 configurées" />
         <MetricCard label="Économies estimées" value={formatEur(820)} sub="Vs prix marché moyen" />
@@ -141,24 +189,33 @@ export default function DashboardPage() {
         {/* Right column */}
         <div className="space-y-5">
 
-          {/* Plan usage */}
+          {/* Plan usage — relié à la vraie BDD */}
           <Card className="p-5">
             <SectionLabel>Usage du plan</SectionLabel>
             <div className="mt-4">
               <div className="flex justify-between mb-2 text-sm">
                 <span style={{ color: 'var(--muted)' }}>Estimations aujourd&apos;hui</span>
-                <span className="font-mono" style={{ color: 'var(--blue)' }}>3 / 5</span>
+                <span className="font-mono" style={{ color: usageColor }}>
+                  {usageLoading ? '…' : `${usageCount} / ${MAX}`}
+                </span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <div className="h-full rounded-full" style={{ width: '60%', background: 'var(--blue)' }} />
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${usagePercent}%`, background: usageColor }}
+                />
               </div>
               <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
-                2 estimations restantes aujourd&apos;hui. Réinitialisation à minuit.
+                {usageLoading
+                  ? 'Chargement…'
+                  : usageCount >= MAX
+                  ? 'Limite atteinte. Passez Premium pour continuer.'
+                  : `${remaining} estimation${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}.`}
               </p>
             </div>
             <Link
               href="/#pricing"
-              className="btn-glow mt-4 flex items-center justify-center gap-2 font-display font-bold text-xs py-2.5 rounded-sm w-full"
+              className="mt-4 flex items-center justify-center gap-2 font-display font-bold text-xs py-2.5 rounded-sm w-full transition-opacity hover:opacity-90"
               style={{ background: 'var(--blue)', color: 'var(--black)' }}
             >
               <Zap size={12} />
@@ -200,7 +257,7 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {/* Active alerts preview */}
+          {/* Active alerts */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
               <SectionLabel>Alertes actives</SectionLabel>
