@@ -52,7 +52,8 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchUsage() {
       try {
-        const ipRes = await fetch('/api/myip')
+        // Récupère l'IP publique réelle du navigateur (même que x-forwarded-for)
+        const ipRes = await fetch('https://api64.ipify.org?format=json')
         const { ip } = await ipRes.json()
 
         const { data } = await supabase
@@ -79,24 +80,15 @@ export default function DashboardPage() {
     <div className="max-w-6xl mx-auto px-6 py-10">
       <div className="flex items-start justify-between mb-8">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--blue)' }}>
-            Dashboard
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--blue)' }}>Dashboard</p>
           <h1 className="font-display font-black text-3xl" style={{ letterSpacing: '-0.5px' }}>
             Bienvenue, <span style={{ color: 'var(--blue)' }}>utilisateur</span>
           </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            Voici un résumé de votre activité Ztrace.
-          </p>
+          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>Voici un résumé de votre activité Ztrace.</p>
         </div>
-        <div
-          className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest px-3 py-2 rounded-sm border"
-          style={{ color: 'var(--muted)', borderColor: 'var(--border-subtle)' }}
-        >
+        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest px-3 py-2 rounded-sm border" style={{ color: 'var(--muted)', borderColor: 'var(--border-subtle)' }}>
           Plan gratuit —{' '}
-          <Link href="/#pricing" className="transition-colors" style={{ color: 'var(--blue)' }}>
-            Upgrader
-          </Link>
+          <Link href="/#pricing" style={{ color: 'var(--blue)' }}>Upgrader</Link>
         </div>
       </div>
 
@@ -160,9 +152,7 @@ export default function DashboardPage() {
             <div className="mt-4">
               <div className="flex justify-between mb-2 text-sm">
                 <span style={{ color: 'var(--muted)' }}>Estimations aujourd&apos;hui</span>
-                <span className="font-mono" style={{ color: usageColor }}>
-                  {usageLoading ? '…' : `${usageCount} / ${MAX}`}
-                </span>
+                <span className="font-mono" style={{ color: usageColor }}>{usageLoading ? '…' : `${usageCount} / ${MAX}`}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div className="h-full rounded-full transition-all duration-500" style={{ width: `${usagePercent}%`, background: usageColor }} />
