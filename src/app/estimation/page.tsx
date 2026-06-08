@@ -131,7 +131,6 @@ export default function EstimationPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Form */}
         <Card className="p-6">
           <div className="flex items-center gap-2 pb-4 mb-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
             <span className="w-2 h-2 rounded-full" style={{ background: '#ff5f56' }} />
@@ -141,8 +140,6 @@ export default function EstimationPage() {
           </div>
 
           <div className="space-y-4">
-
-            {/* Product search */}
             <div ref={searchRef}>
               <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
                 Produit *
@@ -150,7 +147,10 @@ export default function EstimationPage() {
 
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--muted)' }} />
+                  <Search
+                    size={14}
+                    style={{ color: 'var(--muted)', position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'block' }}
+                  />
                   <input
                     className="z-input pl-9"
                     placeholder="Rechercher un produit..."
@@ -159,10 +159,9 @@ export default function EstimationPage() {
                     onFocus={() => { if (query.length >= 2) setShowDropdown(true) }}
                   />
 
-                  {/* Search suggestions */}
                   {showDropdown && suggestions.length > 0 && (
                     <div
-                      className="absolute top-full left-0 right-0 mt-1 rounded-sm border overflow-hidden z-50"
+                      className="absolute top-full left-0 right-0 mt-1 rounded-sm border z-50"
                       style={{ background: 'var(--surface)', borderColor: 'var(--border)', maxHeight: 240, overflowY: 'auto' }}
                     >
                       {suggestions.map(p => (
@@ -187,10 +186,9 @@ export default function EstimationPage() {
                   )}
                 </div>
 
-                {/* Catalog button */}
                 <button
                   onClick={() => { setShowCatalog(!showCatalog); setShowDropdown(false) }}
-                  className="flex items-center gap-1.5 px-3 rounded-sm border text-sm transition-all flex-shrink-0"
+                  className="flex items-center gap-1.5 px-3 rounded-sm border transition-all flex-shrink-0"
                   style={{
                     borderColor: showCatalog ? 'var(--blue)' : 'rgba(255,255,255,0.1)',
                     color: showCatalog ? 'var(--blue)' : 'var(--muted)',
@@ -204,20 +202,18 @@ export default function EstimationPage() {
                 </button>
               </div>
 
-              {/* Catalog browser */}
               {showCatalog && (
                 <div
                   className="mt-2 rounded-sm border overflow-hidden"
                   style={{ background: 'var(--dark)', borderColor: 'var(--border)' }}
                 >
                   <div className="grid grid-cols-3 gap-0" style={{ height: 320 }}>
-                    {/* Category list */}
                     <div className="overflow-y-auto border-r" style={{ borderColor: 'var(--border-subtle)' }}>
                       {CATEGORIES.map(cat => (
                         <button
                           key={cat}
                           onClick={() => setActiveCategory(cat)}
-                          className="w-full text-left px-3 py-2 text-xs transition-colors"
+                          className="w-full text-left px-3 py-2 transition-colors"
                           style={{
                             background: activeCategory === cat ? 'var(--blue-dim)' : 'transparent',
                             color: activeCategory === cat ? 'var(--blue)' : 'var(--muted)',
@@ -232,7 +228,6 @@ export default function EstimationPage() {
                       ))}
                     </div>
 
-                    {/* Product list */}
                     <div className="col-span-2 overflow-y-auto">
                       {catalogByCategory.map(p => (
                         <button
@@ -257,7 +252,6 @@ export default function EstimationPage() {
                 </div>
               )}
 
-              {/* Selected product badge */}
               {selectedProduct && (
                 <div
                   className="mt-2 flex items-center justify-between px-3 py-2 rounded-sm"
@@ -272,7 +266,6 @@ export default function EstimationPage() {
               )}
             </div>
 
-            {/* Condition */}
             <div>
               <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
                 État *
@@ -295,7 +288,6 @@ export default function EstimationPage() {
               </div>
             </div>
 
-            {/* Date + Warranty */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
@@ -318,7 +310,6 @@ export default function EstimationPage() {
               </div>
             </div>
 
-            {/* Accessories */}
             <div>
               <label className="font-mono text-[10px] uppercase tracking-widest block mb-1.5" style={{ color: 'var(--muted)' }}>
                 Accessoires inclus
@@ -340,7 +331,6 @@ export default function EstimationPage() {
           </div>
         </Card>
 
-        {/* Results */}
         <div>
           {!result && !loading && (
             <Card className="p-8 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
